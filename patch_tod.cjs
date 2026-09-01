@@ -1,62 +1,55 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/components/games/TruthOrDare.tsx', 'utf-8');
 
-// 1. Add uploadError state
+// 1. Add usedPrompts state
 code = code.replace(
-  `const [isUploading, setIsUploading] = useState(false);`,
-  `const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);`
+  `const [fileType, setFileType] = useState<'image' | 'video'>('image');`,
+  `const [fileType, setFileType] = useState<'image' | 'video'>('image');
+  const [usedPrompts, setUsedPrompts] = useState<Set<string>>(new Set());`
 );
 
-// 2. Clear uploadError on submit/upload
+// 2. Fetch game_logs in fetchQuestions
 code = code.replace(
-  `const submitText = async () => {
-    if (!textAnswer.trim()) return;
-    setIsUploading(true);`,
-  `const submitText = async () => {
-    if (!textAnswer.trim()) return;
-    setIsUploading(true);
-    setUploadError(null);`
+  `const dRes = await supabase.from('questions').select('content, input_type').eq('game_mode', 'dare').eq('intensity', mode);
+        dData = dRes.data;
+      }`,
+  `const dRes = await supabase.from('questions').select('content, input_type').eq('game_mode', 'dare').eq('intensity', mode);
+        dData = dRes.data;
+      }
+      
+      const { data: logs } = await supabase.from('game_logs').select('question').eq('room_id', roomId).eq('game_mode', 'truth_or_dare');
+      if (logs) {
+        setUsedPrompts(new Set(logs.map(l => l.question).filter(Boolean) as string[]));
+      }`
 );
 
+// 3. Track new questions picked via gameState
 code = code.replace(
-  `const handleMediaUpload = async (file: File | Blob, type: 'voice' | 'image' | 'video') => {
-    setIsUploading(true);`,
-  `const handleMediaUpload = async (file: File | Blob, type: 'voice' | 'image' | 'video') => {
-    setIsUploading(true);
-    setUploadError(null);`
+  `if (!gameState.card_flipped) {`,
+  `if (gameState.card_prompt) {
+      setUsedPrompts(prev => {
+        const next = new Set(prev);
+        next.add(gameState.card_prompt!);
+        return next;
+      });
+    }
+    
+    if (!gameState.card_flipped) {`
 );
 
-// 3. Handle upload error correctly
+// 4. Use usedPrompts in handlePick
 code = code.replace(
-  `} else {
-      console.error('Failed to upload media:', error);
-    }`,
-  `} else {
-      console.error('Failed to upload media:', error);
-      setUploadError(error?.message || 'Failed to upload media. Ensure the "truth-dare-media" storage bucket is public and allows inserts.');
-    }`
-);
-
-// 4. Render the upload error in UI
-code = code.replace(
-  `{isUploading ? (
-                        <div className="flex flex-col items-center py-4 text-slate-400">
-                          <Loader2 className="w-8 h-8 animate-spin mb-2" />
-                          <span className="text-sm">Uploading...</span>
-                        </div>
-                      ) : (`,
-  `{isUploading ? (
-                        <div className="flex flex-col items-center py-4 text-slate-400">
-                          <Loader2 className="w-8 h-8 animate-spin mb-2" />
-                          <span className="text-sm">Uploading...</span>
-                        </div>
-                      ) : uploadError ? (
-                        <div className="flex flex-col items-center gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-center">
-                          <span className="text-sm">{uploadError}</span>
-                          <button onClick={() => setUploadError(null)} className="px-4 py-2 bg-rose-500 text-white rounded-lg text-xs font-bold uppercase">Try Again</button>
-                        </div>
-                      ) : (`
+  `const list = type === 'truth' ? truths : dares;
+    const defaultList: Question[] = type === 'truth' 
+      ? [{ content: "What's a secret you've never told me?", input_type: 'text' }] 
+      : [{ content: "Do 10 pushups.", input_type: 'text' }];
+    const source = list.length > 0 ? list : defaultList;`,
+  `const list = type === 'truth' ? truths : dares;
+    const available = list.filter(q => !usedPrompts.has(q.content));
+    const defaultList: Question[] = type === 'truth' 
+      ? [{ content: "What's a secret you've never told me?", input_type: 'text' }] 
+      : [{ content: "Do 10 pushups.", input_type: 'text' }];
+    const source = available.length > 0 ? available : (list.length > 0 ? list : defaultList);`
 );
 
 fs.writeFileSync('src/components/games/TruthOrDare.tsx', code);

@@ -31,6 +31,7 @@ export function TruthOrDare({ gameState, updateGameState, playerId, roomId, them
   const [textAnswer, setTextAnswer] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileType, setFileType] = useState<'image' | 'video'>('image');
+  const [usedPrompts, setUsedPrompts] = useState<Set<string>>(new Set());
 
   // Derive input type robustly from local state to avoid needing a DB column sync
   const activeQuestion = [...truths, ...dares].find(q => q.content === gameState.card_prompt);
@@ -56,6 +57,11 @@ export function TruthOrDare({ gameState, updateGameState, playerId, roomId, them
         dData = dRes.data;
       }
       
+      const { data: logs } = await supabase.from('game_logs').select('question').eq('room_id', roomId).eq('game_mode', 'truth_or_dare');
+      if (logs) {
+        setUsedPrompts(new Set(logs.map(l => l.question).filter(Boolean) as string[]));
+      }
+      
       if (tData) setTruths(tData as Question[]);
       if (dData) setDares(dData as Question[]);
     };
@@ -63,6 +69,14 @@ export function TruthOrDare({ gameState, updateGameState, playerId, roomId, them
   }, [gameState.intensity_mode]);
 
   useEffect(() => {
+    if (gameState.card_prompt) {
+      setUsedPrompts(prev => {
+        const next = new Set(prev);
+        next.add(gameState.card_prompt!);
+        return next;
+      });
+    }
+    
     if (!gameState.card_flipped) {
       setSubmittedAnswer(null);
       setTextAnswer('');
@@ -86,10 +100,11 @@ export function TruthOrDare({ gameState, updateGameState, playerId, roomId, them
     setIsFlipping(true);
     
     const list = type === 'truth' ? truths : dares;
+    const available = list.filter(q => !usedPrompts.has(q.content));
     const defaultList: Question[] = type === 'truth' 
       ? [{ content: "What's a secret you've never told me?", input_type: 'text' }] 
       : [{ content: "Do 10 pushups.", input_type: 'text' }];
-    const source = list.length > 0 ? list : defaultList;
+    const source = available.length > 0 ? available : (list.length > 0 ? list : defaultList);
     const q = source[Math.floor(Math.random() * source.length)];
     
     setTimeout(async () => {

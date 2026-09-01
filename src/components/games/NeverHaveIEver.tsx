@@ -18,6 +18,7 @@ export function NeverHaveIEver({ gameState, updateGameState, playerId, roomId, t
   const [revealed, setRevealed] = useState(false);
   const [questions, setQuestions] = useState<string[]>([]);
   const [loadingQuestion, setLoadingQuestion] = useState(false);
+  const [usedQuestions, setUsedQuestions] = useState<Set<string>>(new Set());
 
   const myAnswerState = playerId === 'p1' ? gameState.p1_answer : gameState.p2_answer;
   const partnerAnswerState = playerId === 'p1' ? gameState.p2_answer : gameState.p1_answer;
@@ -74,7 +75,9 @@ export function NeverHaveIEver({ gameState, updateGameState, playerId, roomId, t
 
   const nextQuestion = async () => {
     setLoadingQuestion(true);
-    const qList = questions.length > 0 ? questions : ["Never have I ever checked my partner's phone secretly.", "Never have I ever lied to get out of a date."];
+    const available = questions.filter(q => !usedQuestions.has(q));
+    const defaultList = ["Never have I ever checked my partner's phone secretly.", "Never have I ever lied to get out of a date."];
+    const qList = available.length > 0 ? available : (questions.length > 0 ? questions : defaultList);
     const q = qList[Math.floor(Math.random() * qList.length)];
     await updateGameState({
       current_question: q,

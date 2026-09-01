@@ -22,6 +22,7 @@ export function SimultaneousQA({ gameState, updateGameState, playerId, roomId, t
   const [partnerTyping, setPartnerTyping] = useState(false);
   const [questions, setQuestions] = useState<string[]>([]);
   const [loadingQuestion, setLoadingQuestion] = useState(false);
+  const [usedQuestions, setUsedQuestions] = useState<Set<string>>(new Set());
 
   const partnerId = playerId === 'p1' ? 'p2' : 'p1';
   const myAnswerState = playerId === 'p1' ? gameState.p1_answer : gameState.p2_answer;
@@ -42,6 +43,14 @@ export function SimultaneousQA({ gameState, updateGameState, playerId, roomId, t
   }, [gameState.intensity_mode]);
 
   useEffect(() => {
+    if (gameState.current_question) {
+      setUsedQuestions(prev => {
+        const next = new Set(prev);
+        next.add(gameState.current_question!);
+        return next;
+      });
+    }
+
     // Reset local state if question changes
     setAnswer('');
     setRevealed(false);
@@ -115,7 +124,9 @@ export function SimultaneousQA({ gameState, updateGameState, playerId, roomId, t
 
   const nextQuestion = async () => {
     setLoadingQuestion(true);
-    const qList = questions.length > 0 ? questions : ["What is your favorite memory of us?", "What was your first impression of me?"];
+    const available = questions.filter(q => !usedQuestions.has(q));
+    const defaultList = ["What is your favorite memory of us?", "What was your first impression of me?"];
+    const qList = available.length > 0 ? available : (questions.length > 0 ? questions : defaultList);
     const q = qList[Math.floor(Math.random() * qList.length)];
     await updateGameState({
       current_question: q,
