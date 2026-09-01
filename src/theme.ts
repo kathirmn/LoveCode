@@ -1,0 +1,52 @@
+import { IntensityMode, ThemeConfig } from './types';
+
+export const THEMES: Record<IntensityMode, ThemeConfig> = {
+  friendly: {
+    name: 'Friendly',
+    bg: 'bg-[#0f172a]',
+    navBg: 'bg-teal-950/20',
+    primaryGrad: 'from-teal-400 to-yellow-400',
+    textAccent: 'text-teal-400',
+    borderAccent: 'hover:border-teal-500/50',
+    glow: 'shadow-teal-500/20',
+    buttonBg: 'bg-teal-600',
+    buttonHover: 'hover:bg-teal-500',
+    panelBg: 'bg-teal-500/5',
+  },
+  romantic: {
+    name: 'Romantic',
+    bg: 'bg-[#0f172a]',
+    navBg: 'bg-rose-950/20',
+    primaryGrad: 'from-rose-400 to-orange-400',
+    textAccent: 'text-rose-400',
+    borderAccent: 'hover:border-rose-500/50',
+    glow: 'shadow-rose-500/20',
+    buttonBg: 'bg-rose-600',
+    buttonHover: 'hover:bg-rose-500',
+    panelBg: 'bg-rose-500/5',
+  },
+  intimate: {
+    name: 'Intimate',
+    bg: 'bg-[#0f172a]',
+    navBg: 'bg-indigo-950/20',
+    primaryGrad: 'from-purple-400 to-indigo-400',
+    textAccent: 'text-purple-400',
+    borderAccent: 'hover:border-purple-500/50',
+    glow: 'shadow-purple-500/20',
+    buttonBg: 'bg-purple-600',
+    buttonHover: 'hover:bg-purple-500',
+    panelBg: 'bg-purple-500/5',
+  },
+  spicy: {
+    name: 'Spicy',
+    bg: 'bg-[#0f172a]',
+    navBg: 'bg-red-950/20',
+    primaryGrad: 'from-red-500 to-red-600',
+    textAccent: 'text-red-500',
+    borderAccent: 'hover:border-red-500/50',
+    glow: 'shadow-red-600/30',
+    buttonBg: 'bg-red-600',
+    buttonHover: 'hover:bg-red-500',
+    panelBg: 'bg-red-500/5',
+  }
+};
